@@ -37,6 +37,7 @@ class DoubleDQN:
         self.learn_step_counter = 0
 
         self.cost = []
+        self.q_value = []
 
         self.build_net()
 
@@ -141,6 +142,7 @@ class DoubleDQN:
     def e_greedy_action(self, state):
         q_value = self.eval_net.eval(session=self.sess,
                                     feed_dict={self.state_input:[state]})[0]
+        self.q_value.append(np.max(q_value))
         if random.random() <= self.epsilon:
             self.epsilon -= (self.start_epsilon - self.end_epsilon) / 10000
             return random.randint(0, self.action_dim - 1)

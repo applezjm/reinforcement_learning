@@ -60,6 +60,14 @@ def run():
     plt.xlabel("training steps")
     plt.savefig("cost.png")
 
+    # draw Q_value pic
+    accumulate = np.add.accumulate(agent.q_value)
+    plt.cla()
+    plt.plot(np.arange(len(accumulate)) + 1, accumulate / (np.arange(len(accumulate)) + 1))
+    plt.ylabel("Q_value")
+    plt.xlabel("training steps")
+    plt.savefig("value.png")
+
 if __name__ == "__main__":
     run()
 
