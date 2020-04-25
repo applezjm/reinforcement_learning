@@ -3,7 +3,10 @@ origin_dqn
 原论文地址：https://arxiv.org/abs/1312.5602
 ___
 ### 算法主要思想
-#### 1.用NN去拟合Q(s,a)值
-> 优化目标 min(yi-Q(s,a))^2   yi=
-#### 原论文算法迭代流程：
+#### 1.用NN去拟合Q(s,a)值，对比sarsa不需要手工选取特征
+#### 2.增加replay buffer,打破数据连续性，减少学习的方差，防止陷入局部最优。
+#### 3.论文提出两个问题
+> 数据稀疏、嘈杂、延迟（数千步后才有结果）
+> 经验有重要性大小
+#### 3.原论文算法迭代流程：
 ![image](https://github.com/applezjm/reinforcement_learning/blob/master/origin_dqn/image.png)
