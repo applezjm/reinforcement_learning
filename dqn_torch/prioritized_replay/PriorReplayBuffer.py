@@ -71,7 +71,7 @@ class SumTree(object):
         return self.tree[0]  # the root
 
 
-class Memory(object):  # stored as ( s, a, r, s_ ) in SumTree
+class PriorityMemory(object):  # stored as ( s, a, r, s_ ) in SumTree
     """
     This Memory class is modified based on the original code from:
     https://github.com/jaara/AI-blog/blob/master/Seaquest-DDQN-PER.py
@@ -92,7 +92,8 @@ class Memory(object):  # stored as ( s, a, r, s_ ) in SumTree
         self.tree.add(max_p, transition)   # set the max p for new p
 
     def sample(self, n):
-        b_idx, b_memory, ISWeights = np.empty((n,), dtype=np.int32), np.empty((n, self.tree.data[0].size)), np.empty((n, 1))
+        b_idx, b_memory, ISWeights = np.empty((n,), dtype=np.int32), \
+            np.empty((n,), dtype=object), np.empty((n,), dtype=np.float64)
         pri_seg = self.tree.total_p / n       # priority segment
         self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])  # max = 1
 
@@ -102,8 +103,8 @@ class Memory(object):  # stored as ( s, a, r, s_ ) in SumTree
             v = np.random.uniform(a, b)
             idx, p, data = self.tree.get_leaf(v)
             prob = p / self.tree.total_p
-            ISWeights[i, 0] = np.power(prob/min_prob, -self.beta)
-            b_idx[i], b_memory[i, :] = idx, data
+            ISWeights[i] = np.power(prob/min_prob, -self.beta)
+            b_idx[i], b_memory[i] = idx, data
         return b_idx, b_memory, ISWeights
 
     def batch_update(self, tree_idx, abs_errors):

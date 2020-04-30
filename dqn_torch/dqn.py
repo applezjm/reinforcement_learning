@@ -21,7 +21,7 @@ warnings.filterwarnings('ignore')
 
 from tensorboardX import SummaryWriter
 
-from prioritized_replay import PriorReplayBuffer
+from prioritized_replay.PriorReplayBuffer import *
 
 # 关于这个env的介绍，可以参考https://blog.csdn.net/cat_ziyan/article/details/101712107
 # 对于原始图片，做了一部分裁剪，并设置channel=4（用于表现动作）
@@ -47,7 +47,7 @@ class ExpBuf:
     def __len__(self):
         return len(self.buffer)
 
-    def append(self, experience):
+    def store(self, experience):
         self.buffer.append(experience)
 
     def sample(self, batch_size):
@@ -56,11 +56,57 @@ class ExpBuf:
         return np.array(s), np.array(a), np.array(r), \
             np.array(d), np.array(s_)
 
+class PrioReplayBuffer:
+    def __init__(self, buf_size, prob_alpha=0.6):
+        # alpha = [0~1] convert the importance of TD error to priority
+        self.prob_alpha = prob_alpha
+        # beta is importance-sampling, from initial value increasing to 1
+        self.beta = 0.4
+        self.beta_increment_per_sampling = 0.001  
+        self.capacity = buf_size
+        self.pos = 0
+        self.buffer = []
+        self.priorities = np.zeros((buf_size, ), dtype=np.float32)
+
+    def __len__(self):
+        return len(self.buffer)
+
+    def store(self, experience):
+        max_prio = self.priorities.max() if self.buffer else 1.0
+        if len(self.buffer) < self.capacity:
+            self.buffer.append(experience)
+        else:
+            self.buffer[self.pos] = experience
+        self.priorities[self.pos] = max_prio
+        self.pos = (self.pos + 1) % self.capacity
+
+    def sample(self, batch_size):
+        if len(self.buffer) == self.capacity:
+            prios = self.priorities
+        else:
+            prios = self.priorities[:self.pos]
+        probs = prios ** self.prob_alpha
+
+        probs /= probs.sum()
+        indices = np.random.choice(len(self.buffer), batch_size, p=probs)
+        samples = [self.buffer[idx] for idx in indices]
+        total = len(self.buffer)
+
+        self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])
+        weights = (total * probs[indices]) ** (-self.beta)
+        weights /= weights.max()
+        return indices, samples, np.array(weights, dtype=np.float32)
+
+    def batch_update(self, batch_indices, batch_priorities):
+        for idx, prio in zip(batch_indices, batch_priorities):
+            self.priorities[idx] = prio
+
 class Agent:
-    def __init__(self, env, buf, is_double):
+    def __init__(self, env, buf, is_double, is_prior):
         self.env = env
         self.buffer = buf
         self.double = is_double
+        self.prior = is_prior
 
     def step(self, net, state, epsilon=0.0, device="cpu"):
         if np.random.random() < epsilon:
@@ -73,11 +119,18 @@ class Agent:
         s_, r, d, _  = self.env.step(a)
         # get all info and store them
         exp = [state, a, r, d, s_]
-        self.buffer.append(exp)
+        self.buffer.store(exp)
         return s_, r, d
 
-    def learn(self, eval_net, target_net, device="cpu"):
-        s, a, r, d, s_ = self.buffer.sample(BATCH_SIZE)
+    def learn(self, eval_net, target_net, optimizer, device="cpu"):
+        optimizer.zero_grad()
+
+        if self.prior:
+            tree_idx, batch_memory, ISWeights = self.buffer.sample(BATCH_SIZE)
+            s, a, r, d, s_ = zip(*batch_memory)
+            s, a, r, d, s_ = np.array(s), np.array(a), np.array(r), np.array(d), np.array(s_)
+        else:
+            s, a, r, d, s_ = self.buffer.sample(BATCH_SIZE)
 
         s = torch.tensor(s).to(device)
         a = torch.tensor(a).to(device)
@@ -94,7 +147,17 @@ class Agent:
         next_Q_val[done_mask] = 0.0
         expected_Q_val = r + GAMMA * next_Q_val.detach()
         
-        return nn.MSELoss()(Q_val, expected_Q_val)
+        if self.prior:
+            ISWeights = torch.tensor(ISWeights).to(device)
+            loss = (ISWeights * (Q_val - expected_Q_val) ** 2).mean()
+            
+            # td_error更新权重，需要先copy to host memory
+            td_error = torch.abs(Q_val - expected_Q_val).detach().cpu().numpy()
+            self.buffer.batch_update(tree_idx, td_error)
+        else:
+            loss = nn.MSELoss()(Q_val, expected_Q_val)
+        loss.backward()
+        optimizer.step()
 
 
 if __name__ == "__main__":
@@ -120,6 +183,7 @@ if __name__ == "__main__":
     is_double = True if args.model == "double_dqn" else False
     is_dueling = True if args.model == "dueling_dqn" else False
     is_noisy = True if args.model == "noisy_net" else False
+    is_prior = True if args.prior else False
 
     if is_dueling:
         eval_net = base_model.DuelingDQN(env.observation_space.shape, env.action_space.n).to(device)
@@ -131,7 +195,11 @@ if __name__ == "__main__":
         eval_net = base_model.DQN(env.observation_space.shape, env.action_space.n).to(device)
         target_net = base_model.DQN(env.observation_space.shape, env.action_space.n).to(device)
     
-    agent = Agent(env, ExpBuf(REPLAY_SIZE), is_double)
+    if is_prior:
+        buf = PriorityMemory(REPLAY_SIZE) 
+    else:
+        buf = ExpBuf(REPLAY_SIZE)
+    agent = Agent(env, buf, is_double, is_prior)
     epsilon = EPSILON_START
     optimizer = optim.Adam(eval_net.parameters(), lr=LEARNING_RATE)
     writer = SummaryWriter(comment="-" + args.env + "-" + args.model)
@@ -158,10 +226,7 @@ if __name__ == "__main__":
                 # C轮强制替换
                 if frame_idx % SYNC_TARGET_FRAMES == 0:
                     target_net.load_state_dict(eval_net.state_dict())
-                optimizer.zero_grad()
-                loss = agent.learn(eval_net, target_net, device)
-                loss.backward()
-                optimizer.step()
+                agent.learn(eval_net, target_net, optimizer, device)
             is_done = done
             state = next_state
             reward_epsiode += reward
