@@ -121,7 +121,7 @@ class DQN:
         reward_batch = [x[2] for x in minibatch] 
         next_state_batch = [x[3] for x in minibatch] 
         done_batch = [x[4] for x in minibatch] 
-        _, cost, a = self.sess.run([self._train_op, self.loss, self.q_target],
+        _, cost = self.sess.run([self._train_op, self.loss],
                                 feed_dict={self.state_input:state_batch,
                                            self.next_state_input:next_state_batch,
                                            self.action_input:action_batch,
