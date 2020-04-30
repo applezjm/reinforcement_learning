@@ -10,4 +10,4 @@ ___
 > 数据稀疏、嘈杂、延迟（数千步后才有结果）  
 > 经验有重要性大小  
 #### 5.原论文算法迭代流程：
-![image](https://github.com/applezjm/reinforcement_learning/blob/master/origin_dqn/image.png)
+![image](https://github.com/applezjm/reinforcement_learning/blob/master/dqn_torch/origin_dqn/image.png)
