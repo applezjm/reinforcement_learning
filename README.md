@@ -6,7 +6,7 @@ pytorch for deep RL
 
 ### paper related to dqn
 [01][Playing Atari with Deep Reinforcement Learning](https://arxiv.org/abs/1312.5602)  
-[02][Human-level control through deep reinforcement learning]  (https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)  
+[02][Human-level control through deep reinforcement learning](https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)  
 [03][Deep Reinforcement Learning with Double Q-learning](https://arxiv.org/abs/1509.06461)  
 [04][Dueling Network Architectures for Deep Reinforcement Learning](https://arxiv.org/abs/1511.06581)  
 [05][NOISY NETWORKS FOR EXPLORATION](https://arxiv.org/abs/1706.10295)  
