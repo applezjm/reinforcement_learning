@@ -18,5 +18,5 @@ pytorch for deep RL
 
 ### paper related to actor-critic
 [01][Asynchronous Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1602.01783)  
-[02][Trust Region Policy Optimization](https://arxiv.org/pdf/1502.05477.pdf）  
+[02][Trust Region Policy Optimization](https://arxiv.org/pdf/1502.05477.pdf)  
 [02][Proximal Policy Optimization Algorithms](https://arxiv.org/pdf/1707.06347.pdf)
