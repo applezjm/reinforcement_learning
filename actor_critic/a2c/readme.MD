@@ -14,7 +14,7 @@
 
 ##### loss = loss_policy + loss_value + loss_entropy
 loss_policy:actor部分loss  
-loss_value:critic部分loss
+loss_value:critic部分loss  
 loss_entropy:actor输出prob的entropy，增大熵从而增加动作的随机性以便exploration
 
 ## Asynchronous Advantage Actor Critic
