@@ -17,7 +17,7 @@ pytorch for deep RL
 在actor_critic中实现 a2c
 
 ### paper related to actor-critic
-* [Asynchronous Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1602.01783)  
-* [HIGH-DIMENSIONAL CONTINUOUS CONTROL USING GENERALIZED ADVANTAGE ESTIMATION](https://arxiv.org/pdf/1506.02438.pdf)  
-* [Trust Region Policy Optimization](https://arxiv.org/pdf/1502.05477.pdf)  
-* [Proximal Policy Optimization Algorithms](https://arxiv.org/pdf/1707.06347.pdf)
+[01] [Asynchronous Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1602.01783)  
+[02] [HIGH-DIMENSIONAL CONTINUOUS CONTROL USING GENERALIZED ADVANTAGE ESTIMATION](https://arxiv.org/pdf/1506.02438.pdf)  
+[03] [Trust Region Policy Optimization](https://arxiv.org/pdf/1502.05477.pdf)  
+[04] [Proximal Policy Optimization Algorithms](https://arxiv.org/pdf/1707.06347.pdf)
